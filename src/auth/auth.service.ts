@@ -11,7 +11,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
   ) {}
-  async register(dto: { email: string; password: string }) {
+  register = async (dto: { email: string; password: string }) => {
     const hash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.repo.create({ email: dto.email, password: hash });
@@ -22,9 +22,9 @@ export class AuthService {
       message: 'User registered successfully',
       ...tokens,
     };
-  }
+  };
 
-  async getTokens(userId: string) {
+  getTokens = async (userId: string) => {
     const payload = { id: userId };
 
     const accessToken = await this.jwt.signAsync(payload, {
@@ -38,5 +38,24 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
-  }
+  };
+
+  login = async (dto: { email: string; password: string }) => {
+    const user = await this.repo.findByEmail(dto.email);
+    if (!user) {
+      throw new Error('Invalid credentials');
+    }
+
+    const passwordMatches = await bcrypt.compare(dto.password, user.password);
+    if (!passwordMatches) {
+      throw new Error('Invalid credentials');
+    }
+
+    const tokens = await this.getTokens(user.id);
+
+    return {
+      message: 'Login successful',
+      ...tokens,
+    };
+  };
 }

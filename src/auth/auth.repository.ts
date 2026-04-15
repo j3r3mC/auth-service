@@ -3,18 +3,15 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuthRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async create(data: { email: string; password: string }) {
-    return this.prisma.user.create({
-      data,
-      select: { id: true }, // on ne retourne QUE l'id
-    });
-  }
+  create = (data: { email: string; password: string }) => {
+    return this.prisma.user.create({ data });
+  };
 
-  async findByEmail(email: string) {
+  findByEmail = (email: string) => {
     return this.prisma.user.findUnique({
       where: { email },
     });
-  }
+  };
 }
