@@ -1,61 +1,114 @@
-import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { AuthRepository } from './auth.repository';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly repo: AuthRepository,
     private readonly jwt: JwtService,
-    private readonly config: ConfigService,
   ) {}
-  register = async (dto: { email: string; password: string }) => {
+
+  // REGISTER
+  async register(dto: RegisterDto) {
     const hash = await bcrypt.hash(dto.password, 10);
 
-    const user = await this.repo.create({ email: dto.email, password: hash });
+    const user = await this.repo.createUser({
+      ...dto,
+      password: hash,
+    });
 
-    const tokens = await this.getTokens(user.id);
+    const tokens = await this.getTokens(user.id, user.email);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return {
       message: 'User registered successfully',
       ...tokens,
     };
-  };
+  }
 
-  getTokens = async (userId: string) => {
-    const payload = { id: userId };
-
-    const accessToken = await this.jwt.signAsync(payload, {
-      secret: this.config.get('AT_SECRET'),
-      expiresIn: '15m',
-    });
-
-    const refreshToken = await this.jwt.signAsync(payload, {
-      secret: this.config.get('RT_SECRET'),
-      expiresIn: '7d',
-    });
-
-    return { accessToken, refreshToken };
-  };
-
-  login = async (dto: { email: string; password: string }) => {
+  // LOGIN
+  async login(dto: LoginDto) {
     const user = await this.repo.findByEmail(dto.email);
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
+    if (!user) throw new ForbiddenException('Invalid credentials');
 
-    const passwordMatches = await bcrypt.compare(dto.password, user.password);
-    if (!passwordMatches) {
-      throw new Error('Invalid credentials');
-    }
+    const passwordValid = await bcrypt.compare(dto.password, user.password);
+    if (!passwordValid) throw new ForbiddenException('Invalid credentials');
 
-    const tokens = await this.getTokens(user.id);
+    const tokens = await this.getTokens(user.id, user.email);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return {
       message: 'Login successful',
       ...tokens,
     };
-  };
+  }
+
+  // GENERATE TOKENS
+  async getTokens(userId: string, email: string) {
+    const accessToken = await this.jwt.signAsync(
+      { sub: userId, email },
+      {
+        secret: process.env.JWT_ACCESS_SECRET!,
+        expiresIn: '15m',
+      },
+    );
+
+    const refreshToken = await this.jwt.signAsync(
+      { sub: userId, email },
+      {
+        secret: process.env.JWT_REFRESH_SECRET!,
+        expiresIn: '7d',
+      },
+    );
+
+    return { accessToken, refreshToken };
+  }
+
+  // STORE REFRESH TOKEN HASH
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    const hash = await bcrypt.hash(refreshToken, 10);
+    await this.repo.updateRefreshToken(userId, hash);
+  }
+
+  // REFRESH TOKENS
+  async refresh(dto: RefreshDto) {
+    interface JwtPayload {
+      sub: string;
+      email: string;
+    }
+
+    const payload = await this.jwt.verifyAsync<JwtPayload>(dto.refreshToken, {
+      secret: process.env.JWT_REFRESH_SECRET!,
+    });
+
+    const user = await this.repo.findById(payload.sub);
+    if (!user || !user.refreshToken)
+      throw new ForbiddenException('Access denied');
+
+    const tokenMatches = await bcrypt.compare(
+      dto.refreshToken,
+      user.refreshToken,
+    );
+
+    if (!tokenMatches) throw new ForbiddenException('Access denied');
+
+    const tokens = await this.getTokens(user.id, user.email);
+    await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      message: 'Tokens refreshed',
+      ...tokens,
+    };
+  }
+
+  // LOGOUT
+  async logout(userId: string) {
+    await this.repo.clearRefreshToken(userId);
+    return { message: 'Logged out' };
+  }
 }
