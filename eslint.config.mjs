@@ -26,18 +26,28 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: true,
+        project: true,
         tsconfigRootDir: process.cwd(),
       },
     },
   },
 
-  // Empêche ESLint de typer les fichiers hors du projet TS
+  // Empêche ESLint de typer certains fichiers
   {
-    files: ['**/vitest.setup.ts', '**/eslint.config.mjs', 'tests/**/*.ts'],
+    files: ['**/vitest.setup.ts', '**/eslint.config.mjs'],
     languageOptions: {
       parserOptions: {
         project: null,
+      },
+    },
+  },
+
+  // Active TypeScript pour les tests
+  {
+    files: ['tests/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.test.json',
       },
     },
   },
@@ -64,11 +74,26 @@ export default tseslint.config(
   },
 
   {
+    files: ['tests/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+      },
+    },
+  },
+
+  {
+    files: ['tests/**/*.ts'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      'prettier/prettier': ['error', { endOfLine: 'auto' }],
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
     },
   },
 );
