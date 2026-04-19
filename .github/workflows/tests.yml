@@ -22,10 +22,10 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: auth_test
         options: >-
-          --health-cmd="pg_isready -U postgres"
+          --health-cmd="pg_isready -U postgres -d auth_test"
           --health-interval=5s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
       - name: Checkout repository
@@ -35,18 +35,42 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
+      # 1. Lint
+      - name: Lint code
+        run: npm run lint
+
+      # 2. Format check
+      - name: Check formatting
+        run: npx prettier --check "src/**/*.ts" "tests/**/*.ts"
+
+      # 3. Build
+      - name: Build project
+        run: npm run build
+
+      # 4. Generate Prisma client
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      # 5. Reset database
       - name: Reset database
         run: npx prisma migrate reset --force
-        env: 
+        env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/auth_test?schema=public
 
-
+      # 6. Run tests with coverage
       - name: Run tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/auth_test?schema=public
         run: npm run test:coverage
 
+      # 7. Upload coverage artifact
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage

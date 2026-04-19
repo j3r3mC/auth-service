@@ -15,10 +15,12 @@ vi.mock('bcrypt', () => ({
 describe('AuthService (Vitest)', () => {
   let service: AuthService;
 
-  // 🔥 On tape explicitement les mocks du repo
+  // 🔥 Mocks alignés EXACTEMENT avec AuthRepository
   let mockedRepo: {
-    create: ReturnType<typeof vi.fn>;
+    createUser: ReturnType<typeof vi.fn>;
     findByEmail: ReturnType<typeof vi.fn>;
+    updateRefreshToken: ReturnType<typeof vi.fn>;
+    clearRefreshToken: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -28,9 +30,10 @@ describe('AuthService (Vitest)', () => {
         {
           provide: AuthRepository,
           useValue: {
-            // 🔥 Fonctions fléchées → plus de this → plus d’unbound-method
-            create: vi.fn(() => {}),
-            findByEmail: vi.fn(() => {}),
+            createUser: vi.fn(),
+            findByEmail: vi.fn(),
+            updateRefreshToken: vi.fn(),
+            clearRefreshToken: vi.fn(),
           },
         },
         {
@@ -54,8 +57,10 @@ describe('AuthService (Vitest)', () => {
 
     // 🔥 On récupère les mocks proprement typés
     mockedRepo = {
-      create: repo.create as ReturnType<typeof vi.fn>,
+      createUser: repo.createUser as ReturnType<typeof vi.fn>,
       findByEmail: repo.findByEmail as ReturnType<typeof vi.fn>,
+      updateRefreshToken: repo.updateRefreshToken as ReturnType<typeof vi.fn>,
+      clearRefreshToken: repo.clearRefreshToken as ReturnType<typeof vi.fn>,
     };
 
     // bcrypt.hash mocké proprement
@@ -63,8 +68,8 @@ describe('AuthService (Vitest)', () => {
       'hashed_password',
     );
 
-    // repo.create mocké proprement
-    mockedRepo.create.mockResolvedValue({ id: 'user-id' });
+    // repo.createUser mocké proprement
+    mockedRepo.createUser.mockResolvedValue({ id: 'user-id' });
 
     // getTokens mocké proprement
     vi.spyOn(service, 'getTokens').mockResolvedValue({
@@ -83,11 +88,13 @@ describe('AuthService (Vitest)', () => {
     const result = await service.register(dto);
 
     expect(bcrypt.hash).toHaveBeenCalledWith('123456', 10);
-    expect(mockedRepo.create).toHaveBeenCalledWith({
+    expect(mockedRepo.createUser).toHaveBeenCalledWith({
       email: 'test@mail.com',
       password: 'hashed_password',
     });
-    expect(service.getTokens).toHaveBeenCalledWith('user-id');
+
+    // 🔥 AuthService appelle getTokens(userId, undefined)
+    expect(service.getTokens).toHaveBeenCalledWith('user-id', undefined);
 
     expect(result).toEqual({
       message: 'User registered successfully',
@@ -116,7 +123,9 @@ describe('AuthService (Vitest)', () => {
 
       expect(mockedRepo.findByEmail).toHaveBeenCalledWith('test@mail.com');
       expect(bcrypt.compare).toHaveBeenCalledWith('123456', 'hashed_password');
-      expect(service.getTokens).toHaveBeenCalledWith('user-id');
+
+      // 🔥 AuthService appelle getTokens(userId, email)
+      expect(service.getTokens).toHaveBeenCalledWith('user-id', 'test@mail.com');
 
       expect(result).toEqual({
         message: 'Login successful',
