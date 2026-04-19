@@ -16,7 +16,7 @@
     "outDir": "./dist",
 
     "typeRoots": ["./node_modules/@types", "./src/types"],
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
   "include": ["src", "tests"]
 }
