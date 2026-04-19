@@ -4,8 +4,14 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
+  // Ignorer les fichiers de config pour éviter les erreurs de parsing
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: [
+      'eslint.config.mjs',
+      'vitest.config.ts',
+      'vitest.setup.ts',
+      'tests/setup.ts',
+    ],
   },
 
   eslint.configs.recommended,
@@ -20,27 +26,33 @@ export default tseslint.config(
       sourceType: 'commonjs',
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: process.cwd(), // ⬅️ FIX import.meta.dirname
+        tsconfigRootDir: process.cwd(),
       },
     },
   },
 
-  // ⛔ Empêche ESLint de parser les fichiers hors rootDir
- {
-  files: [
-    '**/vitest.setup.ts',
-    '**/eslint.config.mjs',
-    'tests/**/*.ts'
-  ],
-  languageOptions: {
-    parserOptions: {
-      project: null,
+  // Empêche ESLint de typer les fichiers hors du projet TS
+  {
+    files: ['**/vitest.setup.ts', '**/eslint.config.mjs', 'tests/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: null,
+      },
     },
   },
-},
 
+  // Empêcher ESLint de parser vitest.config.ts
+  {
+    files: ['vitest.config.ts'],
+    languageOptions: {
+      parser: null,
+      parserOptions: {
+        project: null,
+      },
+    },
+  },
 
-  // 🔥 Désactivation des règles "unsafe" UNIQUEMENT dans les tests
+  // Désactivation des règles "unsafe" UNIQUEMENT dans les tests
   {
     files: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
     rules: {
