@@ -11,6 +11,7 @@ export default tseslint.config(
       'vitest.config.ts',
       'vitest.setup.ts',
       'tests/setup.ts',
+      'prisma.config.ts',
     ],
   },
 
