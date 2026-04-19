@@ -6,38 +6,38 @@ import { RegisterDto } from '../../src/auth/dto/register.dto';
 export class AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  createUser = (dto: RegisterDto) => {
+  createUser(dto: RegisterDto) {
     return this.prisma.user.create({
       data: {
         email: dto.email,
         password: dto.password,
       },
     });
-  };
+  }
 
-  findById = (id: string) => {
+  findById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
     });
-  };
+  }
 
-  findByEmail = (email: string) => {
+  findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
     });
-  };
+  }
 
-  updateRefreshToken = (userId: string, refreshTokenHash: string) => {
+  updateRefreshToken(userId: string, refreshTokenHash: string) {
     return this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: refreshTokenHash },
     });
-  };
+  }
 
-  clearRefreshToken = (userId: string) => {
+  clearRefreshToken(userId: string) {
     return this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: null },
     });
-  };
+  }
 }

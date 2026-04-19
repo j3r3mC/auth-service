@@ -15,6 +15,9 @@ export class AuthService {
 
   // REGISTER
   async register(dto: RegisterDto) {
+    const existing = await this.repo.findByEmail(dto.email);
+    if (existing) throw new ForbiddenException('Email already taken');
+
     const hash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.repo.createUser({
