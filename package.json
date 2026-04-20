@@ -12,7 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint . --config eslint.config.mjs --fix",
+    "lint": "eslint . --config eslint.config.mjs --ext .ts --fix",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:unit": "jest --runInBand"
