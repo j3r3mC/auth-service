@@ -27,7 +27,8 @@ export class AuthRepository {
     });
   }
 
-  updateRefreshToken(userId: string, refreshTokenHash: string) {
+  // 🔥 Correction ici : accepte string | null
+  updateRefreshToken(userId: string, refreshTokenHash: string | null) {
     return this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: refreshTokenHash },

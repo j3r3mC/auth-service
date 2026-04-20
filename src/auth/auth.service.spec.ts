@@ -26,8 +26,8 @@ describe('AuthService', () => {
           useValue: {
             createUser: jest.fn(),
             findByEmail: jest.fn(),
-            findById: jest.fn(), // ← OBLIGATOIRE
-            updateRefreshToken: jest.fn<Promise<void>, [string, string]>(),
+            findById: jest.fn(),
+            updateRefreshToken: jest.fn(),
           },
         },
         {
@@ -413,5 +413,29 @@ describe('AuthService', () => {
     await expect(
       service.refresh({ refreshToken: 'valid-token' }),
     ).rejects.toThrow('Update error');
+  });
+
+  /// test for logout method
+
+  it('should logout successfully', async () => {
+    (repo.updateRefreshToken as jest.Mock).mockResolvedValue(undefined);
+
+    const result = await service.logout('user-id');
+
+    expect(repo.updateRefreshToken).toHaveBeenCalledWith('user-id', null);
+
+    expect(result).toEqual({
+      message: 'Logged out',
+    });
+  });
+
+  it('should throw if updateRefreshToken fails during logout', async () => {
+    (repo.updateRefreshToken as jest.Mock).mockRejectedValue(
+      new Error('Update error'),
+    );
+
+    await expect(service.logout('user-id')).rejects.toThrow('Update error');
+
+    expect(repo.updateRefreshToken).toHaveBeenCalledWith('user-id', null);
   });
 });
