@@ -26,7 +26,7 @@ jobs:
         run: npm ci
 
       - name: Lint code
-        run: npx eslint . --config eslint.config.mjs
+        run: npx eslint . --config eslint.config.mjs --ext .ts
 
       - name: Check formatting
         run: npx prettier --check "src/**/*.ts" "tests/**/*.ts"
