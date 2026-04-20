@@ -21,7 +21,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
 
     super(options);
   }
-
+  //validate
   validate(payload: JwtPayload) {
     return payload;
   }
