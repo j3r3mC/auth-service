@@ -85,9 +85,15 @@ export class AuthService {
       email: string;
     }
 
-    const payload = await this.jwt.verifyAsync<JwtPayload>(dto.refreshToken, {
-      secret: process.env.JWT_REFRESH_SECRET!,
-    });
+    let payload: JwtPayload;
+
+    try {
+      payload = await this.jwt.verifyAsync<JwtPayload>(dto.refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET!,
+      });
+    } catch {
+      throw new ForbiddenException('Access denied');
+    }
 
     const user = await this.repo.findById(payload.sub);
     if (!user || !user.refreshToken)

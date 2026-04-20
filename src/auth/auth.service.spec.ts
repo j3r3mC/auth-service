@@ -26,6 +26,7 @@ describe('AuthService', () => {
           useValue: {
             createUser: jest.fn(),
             findByEmail: jest.fn(),
+            findById: jest.fn(), // ← OBLIGATOIRE
             updateRefreshToken: jest.fn<Promise<void>, [string, string]>(),
           },
         },
@@ -33,8 +34,10 @@ describe('AuthService', () => {
           provide: JwtService,
           useValue: {
             signAsync: jest.fn().mockResolvedValue('token'),
+            verifyAsync: jest.fn(), // 👉 AJOUT OBLIGATOIRE
           },
         },
+
         {
           provide: ConfigService,
           useValue: {
@@ -194,5 +197,221 @@ describe('AuthService', () => {
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
     });
+  });
+
+  it('should throw if email does not exist', async () => {
+    repo.findByEmail.mockResolvedValue(null);
+
+    await expect(
+      service.login({
+        email: 'test@mail.com',
+        password: '123456',
+      }),
+    ).rejects.toThrow('Invalid credentials');
+
+    expect(bcrypt.compare).not.toHaveBeenCalled();
+    expect(service['jwt'].signAsync).not.toHaveBeenCalled();
+    expect(repo.updateRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it('should throw if password is incorrect', async () => {
+    repo.findByEmail.mockResolvedValue({
+      id: 'user-id',
+      email: 'test@mail.com',
+      password: 'hashed_password',
+      refreshToken: null,
+      createdAt: new Date(),
+    });
+
+    (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+    await expect(
+      service.login({
+        email: 'test@mail.com',
+        password: 'wrongpass',
+      }),
+    ).rejects.toThrow('Invalid credentials');
+
+    expect(service['jwt'].signAsync).not.toHaveBeenCalled();
+    expect(repo.updateRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it('should throw if updateRefreshToken fails', async () => {
+    repo.findByEmail.mockResolvedValue({
+      id: 'user-id',
+      email: 'test@mail.com',
+      password: 'hashed_password',
+      refreshToken: null,
+      createdAt: new Date(),
+    });
+
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+    (service['jwt'].signAsync as jest.Mock)
+      .mockResolvedValueOnce('access-token')
+      .mockResolvedValueOnce('refresh-token');
+
+    (repo.updateRefreshToken as jest.Mock).mockRejectedValue(
+      new Error('Update error'),
+    );
+
+    await expect(
+      service.login({
+        email: 'test@mail.com',
+        password: '123456',
+      }),
+    ).rejects.toThrow('Update error');
+
+    expect(repo.updateRefreshToken).toHaveBeenCalledWith(
+      'user-id',
+      expect.any(String),
+    );
+  });
+
+  /// test refresh method
+
+  it('should refresh tokens successfully', async () => {
+    (service['jwt'].verifyAsync as jest.Mock).mockResolvedValue({
+      sub: 'user-id',
+      email: 'test@mail.com',
+    });
+
+    repo.findById.mockResolvedValue({
+      id: 'user-id',
+      email: 'test@mail.com',
+      password: 'hashed_password',
+      refreshToken: 'hashed_refresh',
+      createdAt: new Date(),
+    });
+
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+    (service['jwt'].signAsync as jest.Mock)
+      .mockResolvedValueOnce('new-access')
+      .mockResolvedValueOnce('new-refresh');
+
+    (repo.updateRefreshToken as jest.Mock).mockResolvedValue(undefined);
+
+    const result = await service.refresh({
+      refreshToken: 'valid-refresh',
+    });
+
+    expect(service['jwt'].verifyAsync).toHaveBeenCalled();
+    expect(repo.findById).toHaveBeenCalledWith('user-id');
+    expect(bcrypt.compare).toHaveBeenCalledWith(
+      'valid-refresh',
+      'hashed_refresh',
+    );
+
+    expect(result).toEqual({
+      message: 'Tokens refreshed',
+      accessToken: 'new-access',
+      refreshToken: 'new-refresh',
+    });
+  });
+
+  it('should throw if verifyAsync fails', async () => {
+    (service['jwt'].verifyAsync as jest.Mock).mockRejectedValue(
+      new Error('Invalid token'),
+    );
+
+    await expect(
+      service.refresh({ refreshToken: 'bad-token' }),
+    ).rejects.toThrow('Access denied');
+
+    expect(repo.findById).not.toHaveBeenCalled();
+    expect(bcrypt.compare).not.toHaveBeenCalled();
+    expect(service['jwt'].signAsync).not.toHaveBeenCalled();
+  });
+
+  it('should throw if user does not exist', async () => {
+    (service['jwt'].verifyAsync as jest.Mock).mockResolvedValue({
+      sub: 'user-id',
+      email: 'test@mail.com',
+    });
+
+    repo.findById.mockResolvedValue(null);
+
+    await expect(service.refresh({ refreshToken: 'token' })).rejects.toThrow(
+      'Access denied',
+    );
+
+    expect(bcrypt.compare).not.toHaveBeenCalled();
+    expect(service['jwt'].signAsync).not.toHaveBeenCalled();
+  });
+
+  it('should throw if user has no refresh token stored', async () => {
+    (service['jwt'].verifyAsync as jest.Mock).mockResolvedValue({
+      sub: 'user-id',
+      email: 'test@mail.com',
+    });
+
+    repo.findById.mockResolvedValue({
+      id: 'user-id',
+      email: 'test@mail.com',
+      password: 'hashed_password',
+      refreshToken: null,
+      createdAt: new Date(),
+    });
+
+    await expect(service.refresh({ refreshToken: 'token' })).rejects.toThrow(
+      'Access denied',
+    );
+
+    expect(bcrypt.compare).not.toHaveBeenCalled();
+    expect(service['jwt'].signAsync).not.toHaveBeenCalled();
+  });
+
+  it('should throw if refresh token does not match', async () => {
+    (service['jwt'].verifyAsync as jest.Mock).mockResolvedValue({
+      sub: 'user-id',
+      email: 'test@mail.com',
+    });
+
+    repo.findById.mockResolvedValue({
+      id: 'user-id',
+      email: 'test@mail.com',
+      password: 'hashed_password',
+      refreshToken: 'hashed_refresh',
+      createdAt: new Date(),
+    });
+
+    (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+    await expect(
+      service.refresh({ refreshToken: 'wrong-token' }),
+    ).rejects.toThrow('Access denied');
+
+    expect(service['jwt'].signAsync).not.toHaveBeenCalled();
+    expect(repo.updateRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it('should throw if updateRefreshToken fails', async () => {
+    (service['jwt'].verifyAsync as jest.Mock).mockResolvedValue({
+      sub: 'user-id',
+      email: 'test@mail.com',
+    });
+
+    repo.findById.mockResolvedValue({
+      id: 'user-id',
+      email: 'test@mail.com',
+      password: 'hashed_password',
+      refreshToken: 'hashed_refresh',
+      createdAt: new Date(),
+    });
+
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+    (service['jwt'].signAsync as jest.Mock)
+      .mockResolvedValueOnce('new-access')
+      .mockResolvedValueOnce('new-refresh');
+
+    (repo.updateRefreshToken as jest.Mock).mockRejectedValue(
+      new Error('Update error'),
+    );
+
+    await expect(
+      service.refresh({ refreshToken: 'valid-token' }),
+    ).rejects.toThrow('Update error');
   });
 });
