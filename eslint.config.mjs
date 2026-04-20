@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   // Ignorer les fichiers de config pour éviter les erreurs de parsing
   {
-    ignores: ['eslint.config.mjs', 'jest.config.cjs', 'prisma.config.ts'],
+    ignores: ['dist/**', '*.config.*', 'prisma.config.ts'],
   },
 
   eslint.configs.recommended,
