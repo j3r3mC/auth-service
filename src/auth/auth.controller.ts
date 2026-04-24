@@ -5,7 +5,9 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
-import { JwtAuthGuard } from './guards/jwt.guard';
+import { JwtGuard } from './guards/jwt.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { Patch } from '@nestjs/common';
 
 @Controller('auth')
 export class AuthController {
@@ -26,7 +28,7 @@ export class AuthController {
     return this.auth.refresh(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtGuard)
   @Get('me')
   getMe(@Req() req: Request) {
     const user = req.user as { sub: string; email: string };
@@ -37,11 +39,18 @@ export class AuthController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtGuard)
   @Post('logout')
   logout(@Req() req: Request) {
     const user = req.user as { sub: string; email: string };
 
     return this.auth.logout(user.sub);
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch('update')
+  updateUser(@Req() req: Request, @Body() dto: UpdateUserDto) {
+    const user = req.user as { sub: string; email: string };
+    return this.auth.updateUser(user.sub, dto);
   }
 }

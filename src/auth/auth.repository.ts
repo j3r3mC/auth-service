@@ -40,4 +40,14 @@ export class AuthRepository {
       data: { refreshToken: null },
     });
   };
+
+  async updateUser(
+    id: string,
+    data: Partial<{ email: string; password: string }>,
+  ) {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
 }

@@ -438,4 +438,42 @@ describe('AuthService', () => {
 
     expect(repo.updateRefreshToken).toHaveBeenCalledWith('user-id', null);
   });
+
+  /// test for updateUser method
+
+  it('should update user successfully', async () => {
+    const userId = 'user-id';
+    const data = { email: 'new@mail.com' };
+
+    repo.updateUser = jest.fn().mockResolvedValue({
+      id: userId,
+      email: 'new@mail.com',
+      password: 'hashed_password',
+      refreshToken: null,
+      createdAt: new Date(),
+    });
+
+    const result = await service.updateUser(userId, data);
+
+    expect(repo.updateUser).toHaveBeenCalledWith(userId, data);
+
+    expect(result).toEqual({
+      message: 'User updated successfully',
+      user: {
+        id: userId,
+        email: 'new@mail.com',
+      },
+    });
+  });
+
+  it('should throw if updateUser fails', async () => {
+    const userId = 'user-id';
+    const data = { email: 'new@mail.com' };
+
+    repo.updateUser = jest.fn().mockRejectedValue(new Error('Update error'));
+
+    await expect(service.updateUser(userId, data)).rejects.toThrow(
+      'Update error',
+    );
+  });
 });

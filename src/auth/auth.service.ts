@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -119,5 +120,28 @@ export class AuthService {
   async logout(userId: string) {
     await this.repo.updateRefreshToken(userId, null);
     return { message: 'Logged out' };
+  }
+
+  async updateUser(userId: string, dto: UpdateUserDto) {
+    const data: Partial<{ email: string; password: string }> = {};
+
+    if (dto.email) {
+      data.email = dto.email;
+    }
+
+    if (dto.password) {
+      const hash = await bcrypt.hash(dto.password, 10);
+      data.password = hash;
+    }
+
+    const updatedUser = await this.repo.updateUser(userId, data);
+
+    return {
+      message: 'User updated successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+      },
+    };
   }
 }
