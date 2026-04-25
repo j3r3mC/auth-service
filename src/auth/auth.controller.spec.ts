@@ -2,6 +2,8 @@ import { Test } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtGuard } from './guards/jwt.guard';
+import { Request } from 'express';
+
 
 describe('AuthController - updateUser', () => {
   let controller: AuthController;
@@ -30,12 +32,15 @@ describe('AuthController - updateUser', () => {
   });
 
   it('should update user successfully', async () => {
-    const req: any = {
+
+   const req = {
       user: { sub: 'user-id', email: 'old@mail.com' },
-    };
+      get: () => undefined,
+  } as unknown as Request & { user: { sub: string; email: string } };
 
     const dto = { email: 'new@mail.com' };
 
+    
     service.updateUser.mockResolvedValue({
       message: 'User updated successfully',
       user: {
@@ -43,7 +48,7 @@ describe('AuthController - updateUser', () => {
         email: 'new@mail.com',
       },
     });
-
+    
     const result = await controller.updateUser(req, dto);
 
     expect(service.updateUser).toHaveBeenCalledWith('user-id', dto);
@@ -58,9 +63,12 @@ describe('AuthController - updateUser', () => {
   });
 
   it('should throw if service.updateUser throws', async () => {
-    const req: any = {
-      user: { sub: 'user-id' },
-    };
+    const req = {
+      user: { sub: 'user-id', email: 'old@mail.com' },
+      get: () => undefined,
+  } as unknown as Request & { user: { sub: string; email: string } };
+
+
 
     const dto = { email: 'new@mail.com' };
 
