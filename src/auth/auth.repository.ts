@@ -1,3 +1,5 @@
+// cSpell: disable
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -50,4 +52,46 @@ export class AuthRepository {
       data,
     });
   }
+
+  // method for recovery password, it will update the password of the user with the given email
+  // Stocker le reset token hashé + expiration
+  setResetToken = (userId: string, tokenHash: string, expiresAt: Date) => {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        resetToken: tokenHash,
+        resetTokenExpiresAt: expiresAt,
+      },
+    });
+  };
+
+  // Trouver un user via son resetToken hashé
+  findByResetToken = (tokenHash: string) => {
+    return this.prisma.user.findFirst({
+      where: {
+        resetToken: tokenHash,
+        resetTokenExpiresAt: {
+          gt: new Date(), // token non expiré
+        },
+      },
+    });
+  };
+
+  // Supprimer le reset token après usage
+  clearResetToken = (userId: string) => {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        resetToken: null,
+        resetTokenExpiresAt: null,
+      },
+    });
+  };
+
+  updatePassword = (userId: string, hashedPassword: string) => {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+  };
 }

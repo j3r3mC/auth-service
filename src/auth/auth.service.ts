@@ -1,4 +1,9 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+// cSpell: disable
+import {
+  Injectable,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthRepository } from './auth.repository';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -6,6 +11,9 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { randomBytes } from 'crypto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -74,8 +82,8 @@ export class AuthService {
   }
 
   // STORE REFRESH TOKEN HASH
-  async updateRefreshToken(userId: string, refreshToken: string) {
-    const hash = await bcrypt.hash(refreshToken, 10);
+  async updateRefreshToken(userId: string, refreshToken: string | null) {
+    const hash = refreshToken ? await bcrypt.hash(refreshToken, 10) : null;
     await this.repo.updateRefreshToken(userId, hash);
   }
 
@@ -118,16 +126,15 @@ export class AuthService {
 
   // LOGOUT
   async logout(userId: string) {
-    await this.repo.updateRefreshToken(userId, null);
+    await this.updateRefreshToken(userId, null);
     return { message: 'Logged out' };
   }
 
+  // UPDATE USER
   async updateUser(userId: string, dto: UpdateUserDto) {
     const data: Partial<{ email: string; password: string }> = {};
 
-    if (dto.email) {
-      data.email = dto.email;
-    }
+    if (dto.email) data.email = dto.email;
 
     if (dto.password) {
       const hash = await bcrypt.hash(dto.password, 10);
@@ -143,5 +150,46 @@ export class AuthService {
         email: updatedUser.email,
       },
     };
+  }
+
+  // FORGOT PASSWORD
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.repo.findByEmail(dto.email);
+    if (!user) return; // on ne révèle rien
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.repo.setResetToken(user.id, tokenHash, expiresAt);
+
+    return token; // à envoyer par email
+  }
+
+  // RESET PASSWORD
+  async resetPassword(dto: ResetPasswordDto) {
+    const { token, password } = dto;
+
+    // 1. On hash le token reçu pour comparer avec la base
+    const tokenHash = await bcrypt.hash(token, 10);
+
+    // 2. On cherche l'utilisateur avec ce hash
+    const user = await this.repo.findByResetToken(tokenHash);
+    if (!user) throw new UnauthorizedException('Invalid or expired token');
+
+    // 3. Vérifier que le token correspond
+    const isValid = await bcrypt.compare(token, user.resetToken!);
+    if (!isValid) throw new UnauthorizedException('Invalid or expired token');
+
+    // 4. Hasher le nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 5. Mettre à jour le mot de passe
+    await this.repo.updatePassword(user.id, hashedPassword);
+
+    // 6. Supprimer le reset token
+    await this.repo.clearResetToken(user.id);
+
+    return { message: 'Password updated' };
   }
 }
