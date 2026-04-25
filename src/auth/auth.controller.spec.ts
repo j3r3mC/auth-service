@@ -63,10 +63,10 @@ describe('AuthController - updateUser', () => {
   });
 
   it('should throw if service.updateUser throws', async () => {
-    const req = {
-      user: { sub: 'user-id', email: 'old@mail.com' },
-      get: () => undefined,
-  } as unknown as Request & { user: { sub: string; email: string } };
+   const req: Request & { user: { sub: string; email: string } } = {
+    user: { sub: 'user-id', email: 'old@mail.com' },
+    get: () => undefined,
+  } as any;
 
 
 
