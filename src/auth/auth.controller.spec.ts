@@ -73,6 +73,8 @@ describe('AuthController - updateUser', () => {
 
     service.updateUser.mockRejectedValue(new Error('Update error'));
 
-    await expect(controller.updateUser(req, dto)).rejects.toThrow('Update error');
+    await expect(controller.updateUser(req, dto)).rejects.toThrow(
+      'Update error',
+    );
   });
 });
