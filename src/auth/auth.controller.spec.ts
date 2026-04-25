@@ -33,10 +33,11 @@ describe('AuthController - updateUser', () => {
 
   it('should update user successfully', async () => {
 
-   const req = {
+    const req: Request & { user: { sub: string; email: string } } = {
       user: { sub: 'user-id', email: 'old@mail.com' },
       get: () => undefined,
-  } as unknown as Request & { user: { sub: string; email: string } };
+    };
+
 
     const dto = { email: 'new@mail.com' };
 
@@ -63,12 +64,10 @@ describe('AuthController - updateUser', () => {
   });
 
   it('should throw if service.updateUser throws', async () => {
-   const req: Request & { user: { sub: string; email: string } } = {
-    user: { sub: 'user-id', email: 'old@mail.com' },
-    get: () => undefined,
-  } as any;
-
-
+    const req: Request & { user: { sub: string; email: string } } = {
+      user: { sub: 'user-id', email: 'old@mail.com' },
+      get: () => undefined,
+    };
 
     const dto = { email: 'new@mail.com' };
 
