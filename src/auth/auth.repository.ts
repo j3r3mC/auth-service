@@ -2,6 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthRepository {
@@ -11,23 +12,26 @@ export class AuthRepository {
   // USERS
   // -------------------------
 
-  createUser(data: { email: string; password: string }) {
+  createUser(data: { email: string; password: string }): Promise<User> {
     return this.prisma.user.create({ data });
   }
 
-  findById(id: string) {
+  findById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { id },
     });
   }
 
-  findByEmail(email: string) {
+  findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { email },
     });
   }
 
-  updateUser(id: string, data: Partial<{ email: string; password: string }>) {
+  updateUser(
+    id: string,
+    data: Partial<{ email: string; password: string }>,
+  ): Promise<User> {
     return this.prisma.user.update({
       where: { id },
       data,
@@ -38,14 +42,17 @@ export class AuthRepository {
   // REFRESH TOKEN
   // -------------------------
 
-  updateRefreshToken(id: string, refreshTokenHash: string | null) {
+  updateRefreshToken(
+    id: string,
+    refreshTokenHash: string | null,
+  ): Promise<User> {
     return this.prisma.user.update({
       where: { id },
       data: { refreshToken: refreshTokenHash },
     });
   }
 
-  clearRefreshToken(id: string) {
+  clearRefreshToken(id: string): Promise<User> {
     return this.prisma.user.update({
       where: { id },
       data: { refreshToken: null },
@@ -56,7 +63,11 @@ export class AuthRepository {
   // RESET PASSWORD
   // -------------------------
 
-  setResetToken(id: string, tokenHash: string, expiresAt: Date) {
+  setResetToken(
+    id: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<User> {
     return this.prisma.user.update({
       where: { id },
       data: {
@@ -66,7 +77,7 @@ export class AuthRepository {
     });
   }
 
-  findByResetToken(tokenHash: string) {
+  findByResetToken(tokenHash: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: {
         resetToken: tokenHash,
@@ -75,7 +86,7 @@ export class AuthRepository {
     });
   }
 
-  clearResetToken(id: string) {
+  clearResetToken(id: string): Promise<User> {
     return this.prisma.user.update({
       where: { id },
       data: {
@@ -85,7 +96,7 @@ export class AuthRepository {
     });
   }
 
-  updatePassword(id: string, hashedPassword: string) {
+  updatePassword(id: string, hashedPassword: string): Promise<User> {
     return this.prisma.user.update({
       where: { id },
       data: { password: hashedPassword },
