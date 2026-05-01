@@ -12,11 +12,18 @@ datasource db {
 }
 
 model User {
-  id                   String   @id @default(uuid())
-  email                String   @unique
-  password             String
-  refreshToken         String?
-  resetToken           String?
-  resetTokenExpiresAt  DateTime?
-  createdAt            DateTime @default(now())
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  password            String
+
+  // Auth tokens
+  refreshToken        String?
+  resetToken          String?
+  resetTokenExpiresAt DateTime?
+
+  // Metadata
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([resetToken])
 }
