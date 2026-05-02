@@ -11,14 +11,19 @@ datasource db {
   provider = "postgresql"
 }
 
-
-
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  password     String
-  refreshToken String?
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  password            String
+
+  // Auth tokens
+  refreshToken        String?
   resetToken          String?
   resetTokenExpiresAt DateTime?
-  createdAt    DateTime @default(now())
+
+  // Metadata
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([resetToken])
 }

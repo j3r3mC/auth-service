@@ -1,53 +1,101 @@
+// cSpell: disable
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto } from './dto/register.dto';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  createUser = (dto: RegisterDto) => {
-    return this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: dto.password,
-      },
-    });
-  };
+  // -------------------------
+  // USERS
+  // -------------------------
 
-  findById = (id: string) => {
+  createUser(data: { email: string; password: string }): Promise<User> {
+    return this.prisma.user.create({ data });
+  }
+
+  findById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { id },
     });
-  };
+  }
 
-  findByEmail = (email: string) => {
+  findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { email },
     });
-  };
+  }
 
-  updateRefreshToken = (userId: string, refreshTokenHash: string | null) => {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: refreshTokenHash },
-    });
-  };
-
-  clearRefreshToken = (userId: string) => {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null },
-    });
-  };
-
-  async updateUser(
+  updateUser(
     id: string,
     data: Partial<{ email: string; password: string }>,
-  ) {
+  ): Promise<User> {
     return this.prisma.user.update({
       where: { id },
       data,
+    });
+  }
+
+  // -------------------------
+  // REFRESH TOKEN
+  // -------------------------
+
+  updateRefreshToken(
+    id: string,
+    refreshTokenHash: string | null,
+  ): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { refreshToken: refreshTokenHash },
+    });
+  }
+
+  clearRefreshToken(id: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { refreshToken: null },
+    });
+  }
+
+  // -------------------------
+  // RESET PASSWORD
+  // -------------------------
+
+  async setResetToken(id: string, tokenHash: string, expiresAt: Date) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        resetToken: tokenHash,
+        resetTokenExpiresAt: expiresAt,
+      },
+    });
+  }
+
+  findByResetToken(tokenHash: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        resetToken: tokenHash,
+        resetTokenExpiresAt: { gt: new Date() },
+      },
+    });
+  }
+
+  clearResetToken(id: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        resetToken: null,
+        resetTokenExpiresAt: null,
+      },
+    });
+  }
+
+  updatePassword(id: string, hashedPassword: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
     });
   }
 }
