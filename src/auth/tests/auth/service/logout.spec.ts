@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../../../auth.service';
 import { AuthRepository } from '../../../auth.repository';
+import { JwtService } from '@nestjs/jwt';
 
 describe('AuthService - logout', () => {
   let service: AuthService;
@@ -25,6 +26,12 @@ describe('AuthService - logout', () => {
           provide: AuthRepository,
           useValue: {
             updateRefreshToken: jest.fn(),
+          },
+        },
+        {
+          provide: JwtService,
+          useValue: {
+            signAsync: jest.fn(),
           },
         },
       ],
