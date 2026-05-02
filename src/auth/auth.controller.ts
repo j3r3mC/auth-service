@@ -20,7 +20,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
 // Guards
-import { JwtGuard } from './guards/jwt.guard';
+import { JwtAuthGuard } from './guards/jwt.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -59,21 +59,21 @@ export class AuthController {
   // Protected routes
   // -------------------------
 
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@Req() req: Request) {
     const user = req.user as { sub: string; email: string };
     return user;
   }
 
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('logout')
   logout(@Req() req: Request) {
     const user = req.user as { sub: string };
     return this.auth.logout(user.sub);
   }
 
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtAuthGuard)
   @Patch('update')
   updateUser(@Req() req: Request, @Body() dto: UpdateUserDto) {
     const user = req.user as { sub: string };

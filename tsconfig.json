@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["node", "jest"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "target": "ES2022",
@@ -14,10 +15,8 @@
     "resolvePackageJsonExports": true,
 
     "rootDir": "./src",
-    "outDir": "./dist",
-
-    "typeRoots": ["./node_modules/@types", "./src/types"],
-    "types": ["node", "jest"]
+    "outDir": "./dist"
   },
-  "include": ["src", "tests"]
+  "include": ["src", "test"], // 👈 AJOUT ICI
+  "exclude": []
 }
