@@ -152,7 +152,9 @@ export class AuthService {
     const data: Partial<{ email: string; password: string }> = {};
 
     if (dto.email) data.email = dto.email;
-    if (dto.password) data.password = await this.hash(dto.password);
+    if (typeof dto.password === 'string' && dto.password.trim() !== '') {
+      data.password = await this.hash(dto.password);
+    }
 
     const updated = await this.repo.updateUser(userId, data);
 
