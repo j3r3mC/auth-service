@@ -63,7 +63,7 @@ export class AuthRepository {
   // RESET PASSWORD
   // -------------------------
 
-  setResetToken(id: string, tokenHash: string, expiresAt: Date): Promise<User> {
+  async setResetToken(id: string, tokenHash: string, expiresAt: Date) {
     return this.prisma.user.update({
       where: { id },
       data: {

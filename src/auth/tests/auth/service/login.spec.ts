@@ -3,7 +3,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../../../auth.service';
 import { AuthRepository } from '../../../auth.repository';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
@@ -43,12 +42,6 @@ describe('AuthService - login', () => {
             signAsync: jest.fn(),
           },
         },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn().mockReturnValue('secret'),
-          },
-        },
       ],
     }).compile();
 
@@ -58,10 +51,6 @@ describe('AuthService - login', () => {
 
     jest.clearAllMocks();
   });
-
-  // -------------------------
-  // TESTS
-  // -------------------------
 
   it('should throw if email does not exist', async () => {
     repo.findByEmail.mockResolvedValue(null);

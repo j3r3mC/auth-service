@@ -1,22 +1,21 @@
-// src/auth/tests/auth/service/login.spec.ts
+// src/auth/tests/auth/service/logout.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../../../auth.service';
 import { AuthRepository } from '../../../auth.repository';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
 
-// 🔥 Mock complet de bcrypt AVANT le describe
-jest.mock('bcrypt', () => ({
-  compare: jest.fn(),
-  hash: jest.fn(),
-}));
-
-describe('AuthService - login', () => {
+describe('AuthService - logout', () => {
   let service: AuthService;
   let repo: jest.Mocked<AuthRepository>;
-  let jwt: jest.Mocked<JwtService>;
-  let config: ConfigService;
+
+  const mockUser = {
+    id: '123',
+    email: 'test@mail.com',
+    password: 'hashed',
+    refreshToken: null,
+    resetToken: null,
+    resetTokenExpiresAt: null,
+    createdAt: new Date(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,20 +24,7 @@ describe('AuthService - login', () => {
         {
           provide: AuthRepository,
           useValue: {
-            findByEmail: jest.fn(),
             updateRefreshToken: jest.fn(),
-          },
-        },
-        {
-          provide: JwtService,
-          useValue: {
-            signAsync: jest.fn(),
-          },
-        },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn().mockReturnValue('secret'),
           },
         },
       ],
@@ -46,21 +32,11 @@ describe('AuthService - login', () => {
 
     service = module.get<AuthService>(AuthService);
     repo = module.get(AuthRepository);
-    jwt = module.get(JwtService);
-    config = module.get(ConfigService);
+
+    jest.clearAllMocks();
   });
 
   it('should logout successfully', async () => {
-    const mockUser = {
-      id: '123',
-      email: 'test@mail.com',
-      password: 'hashed',
-      refreshToken: null,
-      resetToken: null,
-      resetTokenExpiresAt: null,
-      createdAt: new Date(),
-    };
-
     repo.updateRefreshToken.mockResolvedValue(mockUser);
 
     const result = await service.logout('123');

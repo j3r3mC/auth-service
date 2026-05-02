@@ -15,7 +15,6 @@ describe('AuthService - refresh', () => {
   let service: AuthService;
   let repo: jest.Mocked<AuthRepository>;
   let jwt: jest.Mocked<JwtService>;
-  let config: ConfigService;
 
   const mockUser = {
     id: '123',
@@ -57,7 +56,6 @@ describe('AuthService - refresh', () => {
     service = module.get(AuthService);
     repo = module.get(AuthRepository);
     jwt = module.get(JwtService);
-    config = module.get(ConfigService);
   });
 
   it('should refresh tokens successfully', async () => {
