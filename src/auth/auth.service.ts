@@ -14,6 +14,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { randomBytes } from 'crypto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -189,10 +190,16 @@ export class AuthService {
     const tokenHash = await this.hash(dto.token);
 
     const user = await this.repo.findByResetToken(tokenHash);
-    if (!user) throw new UnauthorizedException('Invalid or expired token');
+    if (!user) throw new NotFoundException('User not found');
 
+    // Vérifier expiration
+    if (!user.resetTokenExpiresAt || user.resetTokenExpiresAt < new Date()) {
+      throw new ForbiddenException('Invalid or expired token');
+    }
+
+    // Vérifier correspondance du token
     const valid = await this.compare(dto.token, user.resetToken!);
-    if (!valid) throw new UnauthorizedException('Invalid or expired token');
+    if (!valid) throw new ForbiddenException('Invalid or expired token');
 
     const hashedPassword = await this.hash(dto.password);
 
