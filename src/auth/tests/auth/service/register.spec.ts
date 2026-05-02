@@ -5,7 +5,6 @@ jest.mock('bcrypt', () => ({
   compare: jest.fn(),
 }));
 
-
 import { Test } from '@nestjs/testing';
 import { AuthService } from '../../../../auth/auth.service';
 import { AuthRepository } from '../../../../auth/auth.repository';
@@ -99,87 +98,85 @@ describe('AuthService - register', () => {
   });
 
   it('should throw if hashing the password fails', async () => {
-  // 1. findByEmail → aucun utilisateur
-  repo.findByEmail.mockResolvedValue(null);
+    // 1. findByEmail → aucun utilisateur
+    repo.findByEmail.mockResolvedValue(null);
 
-  // 2. bcrypt.hash → échoue
-  bcrypt.hash.mockRejectedValue(new Error('hash failed'));
+    // 2. bcrypt.hash → échoue
+    bcrypt.hash.mockRejectedValue(new Error('hash failed'));
 
-  // 3. register() doit rejeter l’erreur
-  await expect(
-    service.register({ email: 'test@mail.com', password: '123456' }),
-  ).rejects.toThrow('hash failed');
+    // 3. register() doit rejeter l’erreur
+    await expect(
+      service.register({ email: 'test@mail.com', password: '123456' }),
+    ).rejects.toThrow('hash failed');
 
-  // 4. Rien d’autre ne doit être appelé
-  expect(repo.createUser).not.toHaveBeenCalled();
-  expect(jwt.signAsync).not.toHaveBeenCalled();
-  expect(repo.updateRefreshToken).not.toHaveBeenCalled();
-});
+    // 4. Rien d’autre ne doit être appelé
+    expect(repo.createUser).not.toHaveBeenCalled();
+    expect(jwt.signAsync).not.toHaveBeenCalled();
+    expect(repo.updateRefreshToken).not.toHaveBeenCalled();
+  });
 
-it('should throw if createUser fails', async () => {
-  // 1. findByEmail → aucun utilisateur
-  repo.findByEmail.mockResolvedValue(null);
+  it('should throw if createUser fails', async () => {
+    // 1. findByEmail → aucun utilisateur
+    repo.findByEmail.mockResolvedValue(null);
 
-  // 2. bcrypt.hash → fonctionne
-  bcrypt.hash.mockResolvedValue('hashed-password');
+    // 2. bcrypt.hash → fonctionne
+    bcrypt.hash.mockResolvedValue('hashed-password');
 
-  // 3. createUser → échoue
-  repo.createUser.mockRejectedValue(new Error('create failed'));
+    // 3. createUser → échoue
+    repo.createUser.mockRejectedValue(new Error('create failed'));
 
-  // 4. register() doit rejeter l’erreur
-  await expect(
-    service.register({ email: 'test@mail.com', password: '123456' }),
-  ).rejects.toThrow('create failed');
+    // 4. register() doit rejeter l’erreur
+    await expect(
+      service.register({ email: 'test@mail.com', password: '123456' }),
+    ).rejects.toThrow('create failed');
 
-  // 5. Rien d’autre ne doit être appelé
-  expect(jwt.signAsync).not.toHaveBeenCalled();
-  expect(repo.updateRefreshToken).not.toHaveBeenCalled();
-});
+    // 5. Rien d’autre ne doit être appelé
+    expect(jwt.signAsync).not.toHaveBeenCalled();
+    expect(repo.updateRefreshToken).not.toHaveBeenCalled();
+  });
 
-it('should throw if generateTokens fails', async () => {
-  // 1. findByEmail → aucun utilisateur
-  repo.findByEmail.mockResolvedValue(null);
+  it('should throw if generateTokens fails', async () => {
+    // 1. findByEmail → aucun utilisateur
+    repo.findByEmail.mockResolvedValue(null);
 
-  // 2. hash → fonctionne
-  bcrypt.hash.mockResolvedValue('hashed-password');
+    // 2. hash → fonctionne
+    bcrypt.hash.mockResolvedValue('hashed-password');
 
-  // 3. createUser → fonctionne
-  repo.createUser.mockResolvedValue({ id: '123', email: 'test@mail.com' });
+    // 3. createUser → fonctionne
+    repo.createUser.mockResolvedValue({ id: '123', email: 'test@mail.com' });
 
-  // 4. jwt.signAsync → échoue
-  jwt.signAsync.mockRejectedValue(new Error('jwt failed'));
+    // 4. jwt.signAsync → échoue
+    jwt.signAsync.mockRejectedValue(new Error('jwt failed'));
 
-  // 5. register() doit rejeter l’erreur
-  await expect(
-    service.register({ email: 'test@mail.com', password: '123456' }),
-  ).rejects.toThrow('jwt failed');
+    // 5. register() doit rejeter l’erreur
+    await expect(
+      service.register({ email: 'test@mail.com', password: '123456' }),
+    ).rejects.toThrow('jwt failed');
 
-  // 6. Rien d’autre ne doit être appelé
-  expect(repo.updateRefreshToken).not.toHaveBeenCalled();
-});
+    // 6. Rien d’autre ne doit être appelé
+    expect(repo.updateRefreshToken).not.toHaveBeenCalled();
+  });
 
-it('should throw if storing the refresh token fails', async () => {
-  // 1. findByEmail → aucun utilisateur
-  repo.findByEmail.mockResolvedValue(null);
+  it('should throw if storing the refresh token fails', async () => {
+    // 1. findByEmail → aucun utilisateur
+    repo.findByEmail.mockResolvedValue(null);
 
-  // 2. hash → fonctionne
-  bcrypt.hash.mockResolvedValue('hashed-password');
+    // 2. hash → fonctionne
+    bcrypt.hash.mockResolvedValue('hashed-password');
 
-  // 3. createUser → fonctionne
-  repo.createUser.mockResolvedValue({ id: '123', email: 'test@mail.com' });
+    // 3. createUser → fonctionne
+    repo.createUser.mockResolvedValue({ id: '123', email: 'test@mail.com' });
 
-  // 4. generateTokens → fonctionne
-  jwt.signAsync.mockResolvedValueOnce('access-token');
-  jwt.signAsync.mockResolvedValueOnce('refresh-token');
+    // 4. generateTokens → fonctionne
+    jwt.signAsync.mockResolvedValueOnce('access-token');
+    jwt.signAsync.mockResolvedValueOnce('refresh-token');
 
-  // 5. updateRefreshToken → échoue
-  repo.updateRefreshToken.mockRejectedValue(new Error('refresh failed'));
+    // 5. updateRefreshToken → échoue
+    repo.updateRefreshToken.mockRejectedValue(new Error('refresh failed'));
 
-  // 6. register() doit rejeter l’erreur
-  await expect(
-    service.register({ email: 'test@mail.com', password: '123456' }),
-  ).rejects.toThrow('refresh failed');
-});
-
-
+    // 6. register() doit rejeter l’erreur
+    await expect(
+      service.register({ email: 'test@mail.com', password: '123456' }),
+    ).rejects.toThrow('refresh failed');
+  });
 });
